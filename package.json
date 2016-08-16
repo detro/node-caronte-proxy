@@ -1,0 +1,33 @@
+{
+  "name": "caronte-proxy",
+  "fullname": "Caronte Proxy",
+  "version": "1.0.0",
+  "description": "An HTTP(S) Proxy, suitable to test proxying during development",
+  "homepage": "https://github.com/detro/node-simple-proxy",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/detro/node-simple-proxy"
+  },
+  "bugs": {
+    "url": "https://github.com/detro/node-simple-proxy/issues"
+  },
+  "main": "index.js",
+  "keywords": [
+    "proxy",
+    "http",
+    "https",
+    "development",
+    "simple",
+    "test",
+    "testing"
+  ],
+  "author": {
+    "name": "Ivan De Marino",
+    "email": "detronizator@gmail.com",
+    "url": "http://ivandemarino.me"
+  },
+  "license": "Apache 2.0",
+  "dependencies": {
+    "lodash": "~4.15"
+  }
+}
