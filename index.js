@@ -35,7 +35,6 @@ function SimpleProxy(proxyOptions, requestListener) {
   // Instantiate 'hidden' HTTPS proxy server, to which HTTPS requests are router
   const httpsProxyServer = https.createServer(proxyOptions);
   httpsProxyServer.on('request', onHttpsRequest(proxyOptions, httpsProxyServer, requestListener));
-  httpsProxyServer.listen();
 
   // Instantiate main HTTP proxy server
   const httpProxyServer = http.createServer();
@@ -50,8 +49,24 @@ function SimpleProxy(proxyOptions, requestListener) {
   // Init sessions and clients
   httpsProxyServer._clients = {};
 
-  // Reference to the internal HTTPS proxy server, if needed from the client code
-  httpProxyServer._https = httpsProxyServer;
+  // Monkey-patch the `listen` and `close` methods to ensure proper cleanup
+  // of Caronte Proxy server is always possible
+  var original = {
+    httpProxyServerListen: httpProxyServer.listen,
+    httpsProxyServerListen: httpsProxyServer.listen,
+    httpProxyServerClose: httpProxyServer.close,
+    httpsProxyServerClose: httpsProxyServer.close
+  };
+
+  httpProxyServer.listen = function () {
+    original.httpsProxyServerListen.call(httpsProxyServer);
+    original.httpProxyServerListen.apply(httpProxyServer, arguments);
+  };
+
+  httpProxyServer.close = function () {
+    original.httpProxyServerClose.apply(httpProxyServer, arguments);
+    original.httpsProxyServerClose.call(httpsProxyServer);
+  };
 
   return httpProxyServer;
 }
