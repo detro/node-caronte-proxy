@@ -1,5 +1,8 @@
 # Caronte Proxy (node-caronte-proxy)
 
+[![NPM stats](https://nodei.co/npm/caronte-proxy.png?downloads=true)](https://nodei.co/npm/caronte-proxy/)
+[![NPM downloads](https://nodei.co/npm-dl/caronte-proxy.png)](https://nodei.co/npm/caronte-proxy/)
+
 ## Setup
 
 ```javascript
