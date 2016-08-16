@@ -12,6 +12,9 @@
     "url": "https://github.com/detro/node-simple-proxy/issues"
   },
   "main": "index.js",
+  "engines": {
+    "node": ">=0.12"
+  },
   "keywords": [
     "proxy",
     "http",
