@@ -62,16 +62,16 @@ function onHttpRequest(proxyOptions, httpProxyServer, requestListener) {
     opts.headers = req.headers;
     opts.agent = proxyOptions.httpAgent;
 
-    const target = http.request(opts, forwardedRequestCallback(httpProxyServer, req, res, requestListener));
+    const targetRequest = http.request(opts, targetResponseCallback(proxyOptions, httpProxyServer, req, res, requestListener));
 
     // Echo errors from 'target' back at the HTTP proxy server
-    target.on('error', function (err) {
+    targetRequest.on('error', function (err) {
       err.request = req;
       err.response = res;
       httpProxyServer.emit('error', err);
     });
 
-    req.pipe(target);
+    req.pipe(targetRequest);
   };
 }
 
@@ -82,16 +82,16 @@ function onHttpsRequest(proxyOptions, httpsProxyServer, requestListener) {
     opts.headers = req.headers;
     opts.agent = proxyOptions.httpsAgent;
 
-    const target = https.request(opts, forwardedRequestCallback(proxyOptions, httpsProxyServer, req, res, requestListener));
+    const targetRequest = https.request(opts, targetResponseCallback(proxyOptions, httpsProxyServer, req, res, requestListener));
 
     // Echo errors from 'target' back at the HTTPS proxy server (and in turn to HTTP proxy)
-    target.on('error', function (err) {
+    targetRequest.on('error', function (err) {
       err.request = req;
       err.response = res;
       httpsProxyServer.emit('error', err);
     });
 
-    req.pipe(target);
+    req.pipe(targetRequest);
   };
 }
 
@@ -119,17 +119,19 @@ function onHttpConnect(proxyOptions, httpsProxyServer) {
   };
 }
 
-function forwardedRequestCallback(proxyOptions, instance, req, res, requestListener) {
-  return function _forwardedRequestCallback(forwardedRes) {
-    res.statusCode = forwardedRes.statusCode;
-    res.statusMessage = forwardedRes.statusMessage;
-    res.headers = forwardedRes.headers;
+function targetResponseCallback(proxyOptions, instance, req, res, requestListener) {
+  return function _targetResponseCallback(targetResponse) {
+    res.statusCode = targetResponse.statusCode;
+    res.statusMessage = targetResponse.statusMessage;
+    res.headers = targetResponse.headers;
 
+    // Execute client code callback, if provided
     if (_.isFunction(requestListener)) {
       requestListener.call(instance, req, res);
     }
+
     res.writeHead(res.statusCode, res.statusMessage, res.headers);
-    forwardedRes.pipe(res);
+    targetResponse.pipe(res);
   };
 }
 
