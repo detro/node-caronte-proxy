@@ -1,4 +1,4 @@
-# Caronte Proxy (node-caronte-proxy)
+# Caronte Proxy (caronte-proxy)
 
 [![Build Status](https://travis-ci.org/detro/node-caronte-proxy.svg?branch=master)](https://travis-ci.org/detro/node-caronte-proxy)
 
