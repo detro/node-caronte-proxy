@@ -1,5 +1,20 @@
 language: node_js
+
 node_js:
-  - "6"
-  - "4"
-  - "0.12"
+- '6'
+- '4'
+- '0.12'
+
+deploy:
+  provider: npm
+
+  # Authentication
+  email: detronizator@gmail.com
+  api_key:
+    secure: oqS5emunUi3u4AFBgYdeZqka6KHR89OxuLd5kOPt+3ga0e/gIEe7SRoT76YZr1PZfgGpCSuWhBkBgCjeALA47cJ8Wjgo9K0OasByJ8/NOXuJS02RQcspM3/qFhYB598bI1aCzpyVLR9PLd3FMrWANDL5PTFvhuCQz07gubzCaWMBo54/h58+/8P2UmnMkdVoGZRKFusb2icg24JrKlAKYV6nyGbsPGAckfbYfYjKKGRx1nKLwnR2DWWQttZoXRuslEJPcZe4e+Ks/BwFY4G8Y7rNv8WdS6MelXvjsKNdW+B0kimolgF7iwCB5oAM88XmtRJSavpMEWkiQy1qEZrTz0at9zm+hsRqoXKNW4+eil5nNzKWB/uFLFV4TH7zZKHzX0RigRgasGatpaYMl6pysTbVYZwHFhY/FpLmAHB/vm5+/0GRGBGbpqwMi3G7gmWt0gT2i0gMz7UAbjL1rW/qjrpz22HtZglbwRkIcdkZ5WEp1mWSxjKucOGs+nc99RRMgqZhToWb20PRyKPFbA3+H6Xtph7zvaILC9oaM+JcnjYaKXrtcr5yO1h75rGBKVUSJs5vhcZBHlhK7+IRnC5D45YWrgQR0DPfBO3UQUaH9mFKDeBLeLUtn8jhoHusR1IdWCVY7CpMbX70oAxFBamYC/G7lZn9VeRrPiSRDRQasw8=
+
+  # Conditions for the deploy to happen
+  on:
+    tags: true
+    repo: detro/node-caronte-proxy
+    node: "0.12"
