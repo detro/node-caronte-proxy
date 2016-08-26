@@ -5,14 +5,19 @@ const https = require('https');
 const fs = require('fs');
 
 const _ = require('lodash');
+const debug = require('debug')('caronte:general');
+const debugHttp = require('debug')('caronte:http');
+const debugHttps = require('debug')('caronte:https');
+const debugAuth = require('debug')('caronte:auth');
 
 const pkg = require('./package.json');
 
-const defaults = {
+const defaultProxyOptions = {
   key: fs.readFileSync(__dirname + '/lib/proxy.selfsigned.key'),
   cert: fs.readFileSync(__dirname + '/lib/proxy.selfsigned.cert'),
   httpAgent: false,
-  httpsAgent: false
+  httpsAgent: false,
+  auth: false         //< { username: USERNAME, password: PASSWORD[, realm: USED_ONLY_IF_NOT_EMPTY]}
 };
 
 const connectHeader = [
@@ -20,6 +25,11 @@ const connectHeader = [
   'X-Proxy-Agent: ' + pkg.fullname + ' v' + pkg.version,
   '', ''
 ].join('\r\n');
+
+const AUTH_HEADER_VALUE_PREFIX = 'Basic ';
+const RES_HEADER_NAME_PROXY_AUTHENTICATE = 'Proxy-Authenticate';    //< ex. value 'Proxy-Authenticate: Basic realm="caronte-proxy"'
+const RES_STATUS_CODE_PROXY_AUTHENTICATE = 407;
+const REQ_HEADER_NAME_PROXY_AUTHORIZATION = 'Proxy-Authorization';  //< ex. value 'Proxy-Authorization: Basic <BASE64(username:password)>'
 
 // --------------------------------------------------------------------- PRIVATE
 
@@ -30,7 +40,10 @@ function SimpleProxy(proxyOptions, requestListener) {
     proxyOptions = {};
   }
 
-  proxyOptions = _.assign({}, defaults, proxyOptions);
+  proxyOptions = _.assign({}, defaultProxyOptions, proxyOptions);
+
+  // This will throw if the `.auth` configuration provided is invalid
+  isAuthEnabledAndValid(proxyOptions);
 
   // Instantiate 'hidden' HTTPS proxy server, to which HTTPS requests are router
   const httpsProxyServer = https.createServer(proxyOptions);
@@ -71,8 +84,85 @@ function SimpleProxy(proxyOptions, requestListener) {
   return httpProxyServer;
 }
 
+function isAuthEnabledAndValid(proxyOptions) {
+  if (_.isPlainObject(proxyOptions.auth)) {
+    if (_.isString(proxyOptions.auth.username) && !_.isEmpty(proxyOptions.auth.username) && _.isString(proxyOptions.auth.password) && !_.isEmpty(proxyOptions.auth.password)) {
+      debugAuth('`.auth` configuration valid: ' + JSON.stringify(proxyOptions.auth));
+      return true;
+    }
+
+    debugAuth('Invalid `.auth` configuration: ' + JSON.stringify(proxyOptions.auth));
+    throw new Error('Invalid `.auth` configuration: ' + JSON.stringify(proxyOptions.auth));
+  }
+  return false;
+}
+
+function buildProxyAuthenticateHeader(proxyOptions) {
+  var headerValue = 'Basic';
+  debugAuth('%s header value created', RES_HEADER_NAME_PROXY_AUTHENTICATE);
+
+  // Append  'realm' if it's provided in the 'auth' configuration
+  if (!_.isEmpty(proxyOptions.auth.realm)) {
+    headerValue += ' realm="' + proxyOptions.auth.realm + '"';
+    debugAuth('Realm "%s" appended to %s header', proxyOptions.auth.realm, RES_HEADER_NAME_PROXY_AUTHENTICATE);
+  }
+
+  return headerValue;
+}
+
+function isProxyAuthorizationValid(proxyOptions, proxyAuthorizationHeaderValue) {
+  if (_.startsWith(proxyAuthorizationHeaderValue, AUTH_HEADER_VALUE_PREFIX)) {
+    var base64Credentials = proxyAuthorizationHeaderValue.substring(AUTH_HEADER_VALUE_PREFIX.length);
+    var credentials = new Buffer(base64Credentials, 'base64').toString();
+    var expectedCredentials = proxyOptions.auth.username + ':' + proxyOptions.auth.password;
+
+    debugAuth('Received Credentials: %s', credentials);
+    if (!_.isEqual(credentials, expectedCredentials)) {
+      debugAuth('Access denied (wrong credentials)');
+      return false;
+    }
+
+    return true;
+  }
+
+  debugAuth('Invalid %s header: %s', REQ_HEADER_NAME_PROXY_AUTHORIZATION, proxyAuthorizationHeaderValue);
+  return false;
+}
+
+function handleAuthentication(proxyOptions, req, res) {
+  if (isAuthEnabledAndValid(proxyOptions)) {
+    var proxyAuthHeaderVal = req.headers[REQ_HEADER_NAME_PROXY_AUTHORIZATION.toLowerCase()];
+
+    // It musth have the "Proxy-Authorization" header and it must match the configured Auth credentials
+    if (!proxyAuthHeaderVal || !isProxyAuthorizationValid(proxyOptions, proxyAuthHeaderVal)) {
+      debugAuth('Authentication failed (%s)', proxyAuthHeaderVal);
+
+      res.statusCode = RES_STATUS_CODE_PROXY_AUTHENTICATE;
+      res.setHeader(RES_HEADER_NAME_PROXY_AUTHENTICATE, buildProxyAuthenticateHeader(proxyOptions));
+      res.write(RES_STATUS_CODE_PROXY_AUTHENTICATE + ': Proxy Authentication Required');
+      res.end();
+
+      return false;
+    } else {
+      // It passed the Authentication: don't propagate "Proxy-Authorization" header to remote
+      req.removeHeader(REQ_HEADER_NAME_PROXY_AUTHORIZATION);
+    }
+
+    debugAuth('Authentication success (%s)', proxyAuthHeaderVal);
+  }
+
+  return true;
+}
+
 function onHttpRequest(proxyOptions, httpProxyServer, requestListener) {
   return function _onHttpRequest(req, res) {
+    debugHttp('Request received "%s"', req.url);
+
+    if (!handleAuthentication(proxyOptions, req, res)) {
+      debugHttp('Short-circuiting request because it failed Authentication');
+      return;
+    }
+
     var opts = url.parse(req.url);
     opts.headers = req.headers;
     opts.agent = proxyOptions.httpAgent;
@@ -81,17 +171,28 @@ function onHttpRequest(proxyOptions, httpProxyServer, requestListener) {
 
     // Echo errors from 'target' back at the HTTP proxy server
     targetRequest.on('error', function (err) {
+      debugHttp(err);
+
       err.request = req;
       err.response = res;
       httpProxyServer.emit('error', err);
     });
 
     req.pipe(targetRequest);
+
+    debugHttp('Request piped through');
   };
 }
 
 function onHttpsRequest(proxyOptions, httpsProxyServer, requestListener) {
   return function _onHttpsRequest(req, res) {
+    debugHttps('Request received "%s"', req.originalUrl);
+
+    if (!handleAuthentication(proxyOptions, req, res)) {
+      debugHttp('Short-circuiting request because it failed Authentication');
+      return;
+    }
+
     var opts = url.parse(httpsProxyServer._clients[req.socket.remotePort] + req.url);
     req.originalUrl = url.format(opts);
     opts.headers = req.headers;
@@ -101,12 +202,16 @@ function onHttpsRequest(proxyOptions, httpsProxyServer, requestListener) {
 
     // Echo errors from 'target' back at the HTTPS proxy server (and in turn to HTTP proxy)
     targetRequest.on('error', function (err) {
+      debugHttps(err);
+
       err.request = req;
       err.response = res;
       httpsProxyServer.emit('error', err);
     });
 
     req.pipe(targetRequest);
+
+    debugHttps('Request piped through');
   };
 }
 
@@ -125,10 +230,14 @@ function onHttpConnect(proxyOptions, httpsProxyServer) {
     client.pipe(target);
 
     target.on('connect', function () {
+      debugHttps('HTTP CONNECT connection established');
+
       httpsProxyServer._clients[target.localPort] = reqUrl;
     });
 
     client.on('end', function () {
+      debugHttps('HTTP CONNECT connection ended');
+
       delete httpsProxyServer._clients[target.localPort];
     });
   };
@@ -136,6 +245,8 @@ function onHttpConnect(proxyOptions, httpsProxyServer) {
 
 function targetResponseCallback(proxyOptions, instance, req, res, requestListener) {
   return function _targetResponseCallback(targetResponse) {
+    debug('Response received from remote, returning it to client');
+
     res.statusCode = targetResponse.statusCode;
     res.statusMessage = targetResponse.statusMessage;
     res.headers = targetResponse.headers;

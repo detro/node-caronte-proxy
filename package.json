@@ -34,7 +34,9 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "lodash": "~4.15"
+    "lodash": "~4.15",
+    "debug": "~2.2"
+  },
   "devDependencies": {
     "mocha": "~3.0",
     "http-proxy-agent": "~1.0",
