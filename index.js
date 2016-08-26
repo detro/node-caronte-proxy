@@ -116,7 +116,7 @@ function isProxyAuthorizationValid(proxyOptions, proxyAuthorizationHeaderValue) 
     var credentials = new Buffer(base64Credentials, 'base64').toString();
     var expectedCredentials = proxyOptions.auth.username + ':' + proxyOptions.auth.password;
 
-    debugAuth('Received Credentials: %s', credentials);
+    debugAuth('Received Credentials: "%s"', credentials);
     if (!_.isEqual(credentials, expectedCredentials)) {
       debugAuth('Access denied (wrong credentials)');
       return false;
@@ -129,26 +129,32 @@ function isProxyAuthorizationValid(proxyOptions, proxyAuthorizationHeaderValue) 
   return false;
 }
 
-function handleAuthentication(proxyOptions, req, res) {
+function handleAuthentication(proxyOptions, serverInstance, req, res, requestListener) {
   if (isAuthEnabledAndValid(proxyOptions)) {
     var proxyAuthHeaderVal = req.headers[REQ_HEADER_NAME_PROXY_AUTHORIZATION.toLowerCase()];
 
     // It musth have the "Proxy-Authorization" header and it must match the configured Auth credentials
     if (!proxyAuthHeaderVal || !isProxyAuthorizationValid(proxyOptions, proxyAuthHeaderVal)) {
-      debugAuth('Authentication failed (%s)', proxyAuthHeaderVal);
+      var errorStr = RES_STATUS_CODE_PROXY_AUTHENTICATE + ': Proxy Authentication Required';
+      debugAuth('Authentication failed: "%s"', proxyAuthHeaderVal);
+
+      // Execute client code callback, if provided
+      if (_.isFunction(requestListener)) {
+        requestListener.call(serverInstance, req, res, new Error(errorStr));
+      }
 
       res.statusCode = RES_STATUS_CODE_PROXY_AUTHENTICATE;
       res.setHeader(RES_HEADER_NAME_PROXY_AUTHENTICATE, buildProxyAuthenticateHeader(proxyOptions));
-      res.write(RES_STATUS_CODE_PROXY_AUTHENTICATE + ': Proxy Authentication Required');
+      res.write(errorStr);
       res.end();
 
       return false;
     } else {
       // It passed the Authentication: don't propagate "Proxy-Authorization" header to remote
-      req.removeHeader(REQ_HEADER_NAME_PROXY_AUTHORIZATION);
+      delete req.headers[REQ_HEADER_NAME_PROXY_AUTHORIZATION.toLowerCase()];
     }
 
-    debugAuth('Authentication success (%s)', proxyAuthHeaderVal);
+    debugAuth('Authentication success: "%s"', proxyAuthHeaderVal);
   }
 
   return true;
@@ -158,7 +164,7 @@ function onHttpRequest(proxyOptions, httpProxyServer, requestListener) {
   return function _onHttpRequest(req, res) {
     debugHttp('Request received "%s"', req.url);
 
-    if (!handleAuthentication(proxyOptions, req, res)) {
+    if (!handleAuthentication(proxyOptions, httpProxyServer, req, res, requestListener)) {
       debugHttp('Short-circuiting request because it failed Authentication');
       return;
     }
@@ -188,7 +194,7 @@ function onHttpsRequest(proxyOptions, httpsProxyServer, requestListener) {
   return function _onHttpsRequest(req, res) {
     debugHttps('Request received "%s"', req.originalUrl);
 
-    if (!handleAuthentication(proxyOptions, req, res)) {
+    if (!handleAuthentication(proxyOptions, httpsProxyServer, req, res, requestListener)) {
       debugHttp('Short-circuiting request because it failed Authentication');
       return;
     }
@@ -243,7 +249,7 @@ function onHttpConnect(proxyOptions, httpsProxyServer) {
   };
 }
 
-function targetResponseCallback(proxyOptions, instance, req, res, requestListener) {
+function targetResponseCallback(proxyOptions, serverInstance, req, res, requestListener) {
   return function _targetResponseCallback(targetResponse) {
     debug('Response received from remote, returning it to client');
 
@@ -253,7 +259,7 @@ function targetResponseCallback(proxyOptions, instance, req, res, requestListene
 
     // Execute client code callback, if provided
     if (_.isFunction(requestListener)) {
-      requestListener.call(instance, req, res);
+      requestListener.call(serverInstance, req, res);
     }
 
     res.writeHead(res.statusCode, res.statusMessage, res.headers);

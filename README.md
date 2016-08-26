@@ -7,8 +7,12 @@
 
 ```javascript
 var options = {};
-var caronteProxy = require('caronte-proxy')(options, function (req, res) {
-  console.log('A new soul has approached Caronte with a coin for its journey...');
+var caronteProxy = require('caronte-proxy')(options, function (req, res, err) {
+  if (!err) {
+    console.log('A soul has approached Caronte with a coin for its journey...');
+  } else {
+    console.error('A soul has approached Caronte without a coin, so it\'s going to remain in Limbo for ethernity...');
+  }
 });
 
 caronteProxy.on('listening', function () {
