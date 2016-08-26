@@ -1,5 +1,7 @@
 # Caronte Proxy (node-caronte-proxy)
 
+[![Build Status](https://travis-ci.org/detro/node-caronte-proxy.svg?branch=master)](https://travis-ci.org/detro/node-caronte-proxy)
+
 [![NPM stats](https://nodei.co/npm/caronte-proxy.png?downloads=true)](https://nodei.co/npm/caronte-proxy/)
 [![NPM downloads](https://nodei.co/npm-dl/caronte-proxy.png)](https://nodei.co/npm/caronte-proxy/)
 
