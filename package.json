@@ -22,14 +22,17 @@
     "development",
     "simple",
     "test",
-    "testing"
+    "testing",
+    "auth",
+    "proxy-auth",
+    "basic-auth"
   ],
   "author": {
     "name": "Ivan De Marino",
     "email": "detronizator@gmail.com",
     "url": "http://ivandemarino.me"
   },
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "dependencies": {
     "lodash": "~4.15"
   "devDependencies": {
