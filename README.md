@@ -5,6 +5,31 @@
 [![NPM stats](https://nodei.co/npm/caronte-proxy.png?downloads=true)](https://nodei.co/npm/caronte-proxy/)
 [![NPM downloads](https://nodei.co/npm-dl/caronte-proxy.png)](https://nodei.co/npm/caronte-proxy/)
 
+## What's this for?
+
+Caronte is my answer to the need of hosting a _feature-rich-enough_ HTTP Proxy in NodeJS.
+
+I have tons of NodeJS code that has to deal with Proxies, and such code needs testing.
+I started digging, and I found many libraries to build proxies (like the
+famous [http-proxy](https://www.npmjs.com/package/http-proxy)), but no "out of the box"
+solutions that fit my needs.
+
+So I made one.
+
+This is in no way something you want to use in _production_: this Proxy is built
+for testing and I haven't spent a second checking memory consumption nor
+performance. This Proxy is to provide you with a testing ground: so my focus
+is on adding typical commercial Proxy features, rather then being _production-ready_.
+
+Some features include:
+
+* Support for HTTP and HTTPS proxying
+* Support for HTTPS (it uses a self-signed certificate by default, but you can provide one)
+* Support for Proxy Basic HTTP Authentication
+
+Eventually I'd like to add SOCKS support but it's not an urgent need of mine,
+so it can wait. Maybe **you** will build that!
+
 ## Setup
 
 ```javascript
@@ -57,7 +82,7 @@ DEBUG=caronte:* npm test
 
 Check out [debug](https://www.npmjs.com/package/debug) for more fine tuning. 
 
-## _Caronte?_
+## _"Caronte"?_
 In Greek mythology, _Charon_ or _Kharon_ (/ˈkɛərɒn/ or /ˈkɛərən/; Greek _Χάρων_; Italian **_Caronte_**)
 is the ferryman of [Hades](https://en.wikipedia.org/wiki/Hades) who carries
 souls of the newly deceased across the rivers Styx and Acheron that divided
