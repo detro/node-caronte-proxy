@@ -5,6 +5,8 @@
 [![NPM stats](https://nodei.co/npm/caronte-proxy.png?downloads=true)](https://nodei.co/npm/caronte-proxy/)
 [![NPM downloads](https://nodei.co/npm-dl/caronte-proxy.png)](https://nodei.co/npm/caronte-proxy/)
 
+[![Dependency Status](https://dependencyci.com/github/detro/node-caronte-proxy/badge)](https://dependencyci.com/github/detro/node-caronte-proxy)
+
 ## What's this for?
 
 Caronte is my answer to the need of hosting a _feature-rich-enough_ HTTP Proxy in NodeJS.
