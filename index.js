@@ -20,20 +20,21 @@ const defaultProxyOptions = {
   auth: false         //< { username: USERNAME, password: PASSWORD[, realm: USED_ONLY_IF_NOT_EMPTY]}
 };
 
-const connectHeader = [
-  'HTTP/1.1 200 Connection Established',
-  'X-Proxy-Agent: ' + pkg.fullname + ' v' + pkg.version,
-  '', ''
-].join('\r\n');
-
+const RES_HEADER_NAME_PROXY_AGENT = 'X-Proxy-Agent';
 const AUTH_HEADER_VALUE_PREFIX = 'Basic ';
 const RES_HEADER_NAME_PROXY_AUTHENTICATE = 'Proxy-Authenticate';    //< ex. value 'Proxy-Authenticate: Basic realm="caronte-proxy"'
 const RES_STATUS_CODE_PROXY_AUTHENTICATE = 407;
 const REQ_HEADER_NAME_PROXY_AUTHORIZATION = 'Proxy-Authorization';  //< ex. value 'Proxy-Authorization: Basic <BASE64(username:password)>'
 
+const HTTP_CONNECT_RES_HEADER = [
+  'HTTP/1.1 200 Connection Established',
+  RES_HEADER_NAME_PROXY_AGENT + ': ' + pkg.fullname + ' v' + pkg.version,
+  '', ''
+].join('\r\n');
+
 // --------------------------------------------------------------------- PRIVATE
 
-function SimpleProxy(proxyOptions, requestListener) {
+function CaronteProxy(proxyOptions, requestListener) {
   // Normalize input
   if (arguments.length === 1 && typeof proxyOptions === 'function') {
     requestListener = proxyOptions;
@@ -133,6 +134,8 @@ function handleAuthentication(proxyOptions, serverInstance, req, res, requestLis
   if (isAuthEnabledAndValid(proxyOptions)) {
     var proxyAuthHeaderVal = req.headers[REQ_HEADER_NAME_PROXY_AUTHORIZATION.toLowerCase()];
 
+    debugAuth('Received Headers: %s', JSON.stringify(req.headers));
+
     // It musth have the "Proxy-Authorization" header and it must match the configured Auth credentials
     if (!proxyAuthHeaderVal || !isProxyAuthorizationValid(proxyOptions, proxyAuthHeaderVal)) {
       var errorStr = RES_STATUS_CODE_PROXY_AUTHENTICATE + ': Proxy Authentication Required';
@@ -228,7 +231,7 @@ function onHttpConnect(proxyOptions, httpsProxyServer) {
     const port = reqUrlSplit[1];
     const reqUrl = 'https://' + (port === '443' ? hostname : req.url);
 
-    client.write(connectHeader);
+    client.write(HTTP_CONNECT_RES_HEADER);
 
     const target = net.connect(httpsProxyServer.address());
     target.write(header);
@@ -269,4 +272,4 @@ function targetResponseCallback(proxyOptions, serverInstance, req, res, requestL
 
 // ---------------------------------------------------------------------- PUBLIC
 
-module.exports = SimpleProxy;
+module.exports = CaronteProxy;
