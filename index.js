@@ -195,7 +195,7 @@ function onHttpRequest(proxyOptions, httpProxyServer, requestListener) {
 
 function onHttpsRequest(proxyOptions, httpsProxyServer, requestListener) {
   return function _onHttpsRequest(req, res) {
-    debugHttps('Request received "%s"', req.originalUrl);
+    debugHttps('Request received');
 
     if (!handleAuthentication(proxyOptions, httpsProxyServer, req, res, requestListener)) {
       debugHttp('Short-circuiting request because it failed Authentication');
