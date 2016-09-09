@@ -2,15 +2,17 @@ const https = require('https');
 const url = require('url');
 const assert = require('assert');
 
+const STEP_TIMEOUT = 60000;
+
 const CaronteProxy = require('../');
 
 const PROXY_HOST = 'localhost';
 const PROXY_PORT = 9999;
 const PROXY_AUTH_USERNAME = 'virgilio';
 const PROXY_AUTH_PASSWORD = 'dante';
-const PROXY_AUTHORIZATION_HEADER_VALUE = 'Basic ' + new Buffer(PROXY_AUTH_USERNAME + ':' + PROXY_AUTH_PASSWORD).toString('base64');
 
-var httpsProxyAgent = new (require('https-proxy-agent'))('http://' + PROXY_HOST + ':' + PROXY_PORT);
+var unauthenticatedHttpsProxyAgent = new (require('https-proxy-agent'))('http://' + PROXY_HOST + ':' + PROXY_PORT);
+var authenticatedHttpsProxyAgent = new (require('https-proxy-agent'))('http://' + PROXY_AUTH_USERNAME + ':' + PROXY_AUTH_PASSWORD + '@' + PROXY_HOST + ':' + PROXY_PORT);
 
 var proxyRequestCounter = 0;
 var proxyRequestErrorCounter = 0;
@@ -19,7 +21,7 @@ var proxy = CaronteProxy({
     username: PROXY_AUTH_USERNAME,
     password: PROXY_AUTH_PASSWORD
   }
-},function (req, res, err) {
+}, function (req, res, err) {
   if (!err) {
     ++proxyRequestCounter;
   } else {
@@ -34,13 +36,14 @@ describe('Caronte Proxy - HTTPS (using self signed certificate) - Auth', functio
   });
 
   it('should let authenticated HTTPS traffic through, and remove "Proxy-Authorization" header in transit', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('https://httpbin.org/headers');
-    reqOpts.agent = httpsProxyAgent;
+    reqOpts.agent = authenticatedHttpsProxyAgent;
     reqOpts.rejectUnauthorized = false;
     reqOpts.headers = {
       'Test-Header-1': 'Test-Value-1',
-      'Test-Header-2': 'Test-Value-2',
-      'Proxy-Authorization': PROXY_AUTHORIZATION_HEADER_VALUE
+      'Test-Header-2': 'Test-Value-2'
     };
     var resBody = [];
 
@@ -69,12 +72,11 @@ describe('Caronte Proxy - HTTPS (using self signed certificate) - Auth', functio
   });
 
   it('should let authenticated HTTPS redirects through', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('https://httpbin.org/redirect-to?url=http://httpbin.org/headers');
-    reqOpts.agent = httpsProxyAgent;
+    reqOpts.agent = authenticatedHttpsProxyAgent;
     reqOpts.rejectUnauthorized = false;
-    reqOpts.headers = {
-      'Proxy-Authorization': PROXY_AUTHORIZATION_HEADER_VALUE
-    };
 
     https.request(reqOpts, function (res) {
       assert.equal(res.statusCode, 302);
@@ -86,26 +88,19 @@ describe('Caronte Proxy - HTTPS (using self signed certificate) - Auth', functio
     }).end();
   });
 
-  it('should reject un-authenticated HTTPS traffic', function(done) {
+  it('should reject un-authenticated HTTPS traffic', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('https://httpbin.org/headers');
-    reqOpts.agent = httpsProxyAgent;
+    reqOpts.agent = unauthenticatedHttpsProxyAgent;
     reqOpts.rejectUnauthorized = false;
-    var resBody = [];
 
     https.request(reqOpts, function (res) {
       assert.equal(res.statusCode, 407);
       assert.equal(proxyRequestCounter, 2);
       assert.equal(proxyRequestErrorCounter, 1);
 
-      res
-        .on('data', function (chunk) {
-          resBody.push(chunk);
-        })
-        .on('end', function () {
-          resBody = Buffer.concat(resBody).toString();
-          assert.strictEqual(resBody, '407: Proxy Authentication Required');
-          done();
-        });
+      done();
     }).end();
   });
 

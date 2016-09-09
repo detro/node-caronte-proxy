@@ -2,6 +2,8 @@ const http = require('http');
 const url = require('url');
 const assert = require('assert');
 
+const STEP_TIMEOUT = 60000;
+
 const CaronteProxy = require('../');
 
 const PROXY_HOST = 'localhost';
@@ -21,6 +23,8 @@ describe('Caronte Proxy - HTTP - No Auth', function () {
   });
 
   it('should let HTTP traffic through', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('http://httpbin.org/headers');
     reqOpts.agent = httpProxyAgent;
     reqOpts.headers = {
@@ -52,6 +56,8 @@ describe('Caronte Proxy - HTTP - No Auth', function () {
   });
 
   it('should let HTTP redirects through', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('http://httpbin.org/redirect-to?url=http://httpbin.org/headers');
     reqOpts.agent = httpProxyAgent;
 

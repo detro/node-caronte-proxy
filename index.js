@@ -24,6 +24,7 @@ const RES_HEADER_NAME_PROXY_AGENT = 'X-Proxy-Agent';
 const AUTH_HEADER_VALUE_PREFIX = 'Basic ';
 const RES_HEADER_NAME_PROXY_AUTHENTICATE = 'Proxy-Authenticate';    //< ex. value 'Proxy-Authenticate: Basic realm="caronte-proxy"'
 const RES_STATUS_CODE_PROXY_AUTHENTICATE = 407;
+const RES_STATUS_MSG_PROXY_AUTHENTICATE = 'Proxy Authentication Required';
 const REQ_HEADER_NAME_PROXY_AUTHORIZATION = 'Proxy-Authorization';  //< ex. value 'Proxy-Authorization: Basic <BASE64(username:password)>'
 
 const HTTP_CONNECT_RES_HEADER = [
@@ -53,7 +54,7 @@ function CaronteProxy(proxyOptions, requestListener) {
   // Instantiate main HTTP proxy server
   const httpProxyServer = http.createServer();
   httpProxyServer.on('request', onHttpRequest(proxyOptions, httpProxyServer, requestListener));
-  httpProxyServer.on('connect', onHttpConnect(proxyOptions, httpsProxyServer));
+  httpProxyServer.on('connect', onHttpConnect(proxyOptions, httpsProxyServer, requestListener));
 
   // Echo HTTPS proxy server error back to HTTP proxy server to be handled by client code
   httpsProxyServer.on('error', function _echoErrors(err) {
@@ -130,7 +131,7 @@ function isProxyAuthorizationValid(proxyOptions, proxyAuthorizationHeaderValue) 
   return false;
 }
 
-function handleAuthentication(proxyOptions, serverInstance, req, res, requestListener) {
+function handleAuthentication(proxyOptions, serverInstance, req, resOrSocket, requestListener) {
   if (isAuthEnabledAndValid(proxyOptions)) {
     var proxyAuthHeaderVal = req.headers[REQ_HEADER_NAME_PROXY_AUTHORIZATION.toLowerCase()];
 
@@ -138,18 +139,27 @@ function handleAuthentication(proxyOptions, serverInstance, req, res, requestLis
 
     // It musth have the "Proxy-Authorization" header and it must match the configured Auth credentials
     if (!proxyAuthHeaderVal || !isProxyAuthorizationValid(proxyOptions, proxyAuthHeaderVal)) {
-      var errorStr = RES_STATUS_CODE_PROXY_AUTHENTICATE + ': Proxy Authentication Required';
       debugAuth('Authentication failed: "%s"', proxyAuthHeaderVal);
 
       // Execute client code callback, if provided
       if (_.isFunction(requestListener)) {
-        requestListener.call(serverInstance, req, res, new Error(errorStr));
+        var error = new Error(RES_STATUS_MSG_PROXY_AUTHENTICATE);
+        error.code = RES_STATUS_CODE_PROXY_AUTHENTICATE;
+        requestListener.call(serverInstance, req, resOrSocket, error);
       }
 
-      res.statusCode = RES_STATUS_CODE_PROXY_AUTHENTICATE;
-      res.setHeader(RES_HEADER_NAME_PROXY_AUTHENTICATE, buildProxyAuthenticateHeader(proxyOptions));
-      res.write(errorStr);
-      res.end();
+      // NOTE: `resOrSocket` can be a Response (OutgoingMessage) or a Socket: it depends
+      // at which stage of the HTTP response it's invoked. So we tailor for both.
+      if (resOrSocket instanceof net.Socket) {
+        resOrSocket.write('HTTP/1.1 ' + RES_STATUS_CODE_PROXY_AUTHENTICATE + ' ' + RES_STATUS_MSG_PROXY_AUTHENTICATE + '\r\n');
+        resOrSocket.write(RES_HEADER_NAME_PROXY_AUTHENTICATE + ': ' + buildProxyAuthenticateHeader(proxyOptions) + '\r\n');
+        resOrSocket.end('\r\n');
+        resOrSocket.unref();
+      } else {
+        resOrSocket.statusCode = RES_STATUS_CODE_PROXY_AUTHENTICATE;
+        resOrSocket.setHeader(RES_HEADER_NAME_PROXY_AUTHENTICATE, buildProxyAuthenticateHeader(proxyOptions));
+        resOrSocket.end();
+      }
 
       return false;
     } else {
@@ -165,7 +175,7 @@ function handleAuthentication(proxyOptions, serverInstance, req, res, requestLis
 
 function onHttpRequest(proxyOptions, httpProxyServer, requestListener) {
   return function _onHttpRequest(req, res) {
-    debugHttp('Request received "%s"', req.url);
+    debugHttp('HTTP Request received "%s"', req.url);
 
     if (!handleAuthentication(proxyOptions, httpProxyServer, req, res, requestListener)) {
       debugHttp('Short-circuiting request because it failed Authentication');
@@ -195,17 +205,12 @@ function onHttpRequest(proxyOptions, httpProxyServer, requestListener) {
 
 function onHttpsRequest(proxyOptions, httpsProxyServer, requestListener) {
   return function _onHttpsRequest(req, res) {
-    debugHttps('Request received');
-
-    if (!handleAuthentication(proxyOptions, httpsProxyServer, req, res, requestListener)) {
-      debugHttp('Short-circuiting request because it failed Authentication');
-      return;
-    }
-
     var opts = url.parse(httpsProxyServer._clients[req.socket.remotePort] + req.url);
     req.originalUrl = url.format(opts);
     opts.headers = req.headers;
     opts.agent = proxyOptions.httpsAgent;
+
+    debugHttps('HTTPS Request received "%s"', req.originalUrl);
 
     const targetRequest = https.request(opts, targetResponseCallback(proxyOptions, httpsProxyServer, req, res, requestListener));
 
@@ -224,12 +229,19 @@ function onHttpsRequest(proxyOptions, httpsProxyServer, requestListener) {
   };
 }
 
-function onHttpConnect(proxyOptions, httpsProxyServer) {
+function onHttpConnect(proxyOptions, httpsProxyServer, requestListener) {
   return function _onHttpConnect(req, client, header) {
+    debugHttps('HTTP CONNECT request received');
+
     var reqUrlSplit = req.url.split(':');
     const hostname = reqUrlSplit[0];
     const port = reqUrlSplit[1];
     const reqUrl = 'https://' + (port === '443' ? hostname : req.url);
+
+    if (!handleAuthentication(proxyOptions, httpsProxyServer, req, client, requestListener)) {
+      debugHttp('Short-circuiting request because it failed Authentication');
+      return;
+    }
 
     client.write(HTTP_CONNECT_RES_HEADER);
 

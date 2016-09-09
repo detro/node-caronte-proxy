@@ -2,6 +2,8 @@ const http = require('http');
 const url = require('url');
 const assert = require('assert');
 
+const STEP_TIMEOUT = 60000;
+
 const CaronteProxy = require('../');
 
 const PROXY_HOST = 'localhost';
@@ -34,6 +36,8 @@ describe('Caronte Proxy - HTTP - Auth', function () {
   });
 
   it('should let authenticated HTTP traffic through, and remove "Proxy-Authorization" header in transit', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('http://httpbin.org/headers');
     reqOpts.agent = httpProxyAgent;
     reqOpts.headers = {
@@ -68,6 +72,8 @@ describe('Caronte Proxy - HTTP - Auth', function () {
   });
 
   it('should let authenticated HTTP redirects through', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('http://httpbin.org/redirect-to?url=http://httpbin.org/headers');
     reqOpts.agent = httpProxyAgent;
     reqOpts.headers = {
@@ -85,24 +91,17 @@ describe('Caronte Proxy - HTTP - Auth', function () {
   });
 
   it('should reject un-authenticated HTTP traffic', function(done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('http://httpbin.org/headers');
     reqOpts.agent = httpProxyAgent;
-    var resBody = [];
 
     http.request(reqOpts, function (res) {
       assert.equal(res.statusCode, 407);
       assert.equal(proxyRequestCounter, 2);
       assert.equal(proxyRequestErrorCounter, 1);
 
-      res
-        .on('data', function (chunk) {
-          resBody.push(chunk);
-        })
-        .on('end', function () {
-          resBody = Buffer.concat(resBody).toString();
-          assert.strictEqual(resBody, '407: Proxy Authentication Required');
-          done();
-        });
+      done();
     }).end();
   });
 

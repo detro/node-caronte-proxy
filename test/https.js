@@ -2,6 +2,8 @@ const https = require('https');
 const url = require('url');
 const assert = require('assert');
 
+const STEP_TIMEOUT = 60000;
+
 const CaronteProxy = require('../');
 
 const PROXY_HOST = 'localhost';
@@ -21,6 +23,8 @@ describe('Caronte Proxy - HTTPS (using self signed certificate) - No Auth', func
   });
 
   it('should let HTTPS traffic through', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('https://httpbin.org/headers');
     reqOpts.agent = httpsProxyAgent;
     reqOpts.headers = {
@@ -53,6 +57,8 @@ describe('Caronte Proxy - HTTPS (using self signed certificate) - No Auth', func
   });
 
   it('should let HTTPS redirects through', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('https://httpbin.org/redirect-to?url=http://httpbin.org/headers');
     reqOpts.agent = httpsProxyAgent;
     reqOpts.rejectUnauthorized = false;
@@ -67,12 +73,14 @@ describe('Caronte Proxy - HTTPS (using self signed certificate) - No Auth', func
   });
 
   it('should throw on HTTPS request when Self-Signed certificate is unacceptable', function (done) {
+    this.timeout(STEP_TIMEOUT);
+
     var reqOpts = url.parse('https://httpbin.org/');
     reqOpts.agent = httpsProxyAgent;
 
     https.request(reqOpts, function (res) {
       // THIS SHOULD NEVER HAPPEN
-    }).on('error', function(err) {
+    }).on('error', function (err) {
       assert.equal(err.message, 'self signed certificate');
       assert.equal(err.code, 'DEPTH_ZERO_SELF_SIGNED_CERT');
       done();
