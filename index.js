@@ -131,7 +131,7 @@ function isProxyAuthorizationValid(proxyOptions, proxyAuthorizationHeaderValue) 
   return false;
 }
 
-function handleAuthentication(proxyOptions, serverInstance, req, resOrSocket, requestListener) {
+function handleAuthentication(proxyOptions, serverInstance, req, res, requestListener) {
   if (isAuthEnabledAndValid(proxyOptions)) {
     var proxyAuthHeaderVal = req.headers[REQ_HEADER_NAME_PROXY_AUTHORIZATION.toLowerCase()];
 
@@ -145,21 +145,14 @@ function handleAuthentication(proxyOptions, serverInstance, req, resOrSocket, re
       if (_.isFunction(requestListener)) {
         var error = new Error(RES_STATUS_MSG_PROXY_AUTHENTICATE);
         error.code = RES_STATUS_CODE_PROXY_AUTHENTICATE;
-        requestListener.call(serverInstance, req, resOrSocket, error);
+        requestListener.call(serverInstance, req, res, error);
       }
 
-      // NOTE: `resOrSocket` can be a Response (OutgoingMessage) or a Socket: it depends
-      // at which stage of the HTTP response it's invoked. So we tailor for both.
-      if (resOrSocket instanceof net.Socket) {
-        resOrSocket.write('HTTP/1.1 ' + RES_STATUS_CODE_PROXY_AUTHENTICATE + ' ' + RES_STATUS_MSG_PROXY_AUTHENTICATE + '\r\n');
-        resOrSocket.write(RES_HEADER_NAME_PROXY_AUTHENTICATE + ': ' + buildProxyAuthenticateHeader(proxyOptions) + '\r\n');
-        resOrSocket.end('\r\n');
-        resOrSocket.unref();
-      } else {
-        resOrSocket.statusCode = RES_STATUS_CODE_PROXY_AUTHENTICATE;
-        resOrSocket.setHeader(RES_HEADER_NAME_PROXY_AUTHENTICATE, buildProxyAuthenticateHeader(proxyOptions));
-        resOrSocket.end();
-      }
+      // Respond with a 407 Status Code
+      res.statusCode = RES_STATUS_CODE_PROXY_AUTHENTICATE;
+      res.statusMessage = RES_STATUS_MSG_PROXY_AUTHENTICATE;
+      res.setHeader(RES_HEADER_NAME_PROXY_AUTHENTICATE, buildProxyAuthenticateHeader(proxyOptions));
+      res.end();
 
       return false;
     } else {
@@ -230,7 +223,7 @@ function onHttpsRequest(proxyOptions, httpsProxyServer, requestListener) {
 }
 
 function onHttpConnect(proxyOptions, httpsProxyServer, requestListener) {
-  return function _onHttpConnect(req, client, header) {
+  return function _onHttpConnect(req, clientSocket, header) {
     debugHttps('HTTP CONNECT request received');
 
     var reqUrlSplit = req.url.split(':');
@@ -238,28 +231,45 @@ function onHttpConnect(proxyOptions, httpsProxyServer, requestListener) {
     const port = reqUrlSplit[1];
     const reqUrl = 'https://' + (port === '443' ? hostname : req.url);
 
-    if (!handleAuthentication(proxyOptions, httpsProxyServer, req, client, requestListener)) {
+    // Create HTTP Response manually
+    var res = new http.ServerResponse(req);
+    res.shouldKeepAlive = false;
+    res.chunkedEncoding = false;
+    res.useChunkedEncodingByDefault = false;
+    res.assignSocket(clientSocket);
+
+    // NOTE: normally, node's "http" module has a "finish" event listener that would
+    // take care of closing the socket once the HTTP response has completed, but
+    // since we're making this ServerResponse instance manually, that event handler
+    // never gets hooked up, so we must manually close the socket
+    res.once('finish', function onClientSocketFinish() {
+      debugHttps('Client socket "finished"');
+      res.detachSocket(clientSocket);
+      clientSocket.end();
+    });
+
+    if (!handleAuthentication(proxyOptions, httpsProxyServer, req, res, requestListener)) {
       debugHttp('Short-circuiting request because it failed Authentication');
       return;
     }
 
-    client.write(HTTP_CONNECT_RES_HEADER);
+    clientSocket.write(HTTP_CONNECT_RES_HEADER);
 
-    const target = net.connect(httpsProxyServer.address());
-    target.write(header);
-    target.pipe(client);
-    client.pipe(target);
+    const targetSocket = net.connect(httpsProxyServer.address());
+    targetSocket.write(header);
+    targetSocket.pipe(clientSocket);
+    clientSocket.pipe(targetSocket);
 
-    target.on('connect', function () {
+    targetSocket.on('connect', function () {
       debugHttps('HTTP CONNECT connection established');
 
-      httpsProxyServer._clients[target.localPort] = reqUrl;
+      httpsProxyServer._clients[targetSocket.localPort] = reqUrl;
     });
 
-    client.on('end', function () {
+    clientSocket.on('end', function () {
       debugHttps('HTTP CONNECT connection ended');
 
-      delete httpsProxyServer._clients[target.localPort];
+      delete httpsProxyServer._clients[targetSocket.localPort];
     });
   };
 }
