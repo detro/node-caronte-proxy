@@ -1,6 +1,7 @@
 # Caronte Proxy (caronte-proxy)
 
 [![Build Status](https://travis-ci.org/detro/node-caronte-proxy.svg?branch=master)](https://travis-ci.org/detro/node-caronte-proxy)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdetro%2Fnode-caronte-proxy.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdetro%2Fnode-caronte-proxy?ref=badge_shield)
 
 [![NPM stats](https://nodei.co/npm/caronte-proxy.png?downloads=true)](https://nodei.co/npm/caronte-proxy/)
 [![NPM downloads](https://nodei.co/npm-dl/caronte-proxy.png)](https://nodei.co/npm/caronte-proxy/)
@@ -109,3 +110,6 @@ If you are after a Proxy written with latest NodeJS bells and wissle, you should
 ## License
 
 [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) ([txt](https://www.apache.org/licenses/LICENSE-2.0.txt))
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdetro%2Fnode-caronte-proxy.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdetro%2Fnode-caronte-proxy?ref=badge_large)
