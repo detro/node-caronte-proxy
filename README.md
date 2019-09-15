@@ -1,12 +1,8 @@
 # Caronte Proxy (caronte-proxy)
 
+[![npm version](https://badge.fury.io/js/caronte-proxy.svg)](https://badge.fury.io/js/caronte-proxy)
 [![Build Status](https://travis-ci.org/detro/node-caronte-proxy.svg?branch=master)](https://travis-ci.org/detro/node-caronte-proxy)
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdetro%2Fnode-caronte-proxy.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdetro%2Fnode-caronte-proxy?ref=badge_shield)
-
-[![NPM stats](https://nodei.co/npm/caronte-proxy.png?downloads=true)](https://nodei.co/npm/caronte-proxy/)
-[![NPM downloads](https://nodei.co/npm-dl/caronte-proxy.png)](https://nodei.co/npm/caronte-proxy/)
-
-[![Dependency Status](https://dependencyci.com/github/detro/node-caronte-proxy/badge)](https://dependencyci.com/github/detro/node-caronte-proxy)
 
 ## What's this for?
 

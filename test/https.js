@@ -81,14 +81,13 @@ describe('Caronte Proxy - HTTPS (using self signed certificate) - No Auth', func
     https.request(reqOpts, function (res) {
       // THIS SHOULD NEVER HAPPEN
     }).on('error', function (err) {
-      assert.equal(err.message, 'self signed certificate');
-      assert.equal(err.code, 'DEPTH_ZERO_SELF_SIGNED_CERT');
+      assert.equal(err.message, 'certificate has expired');
+      assert.equal(err.code, 'CERT_HAS_EXPIRED');
       done();
     }).end();
   });
 
-  after(function stopProxy(done) {
-    proxy.on('close', done);
+  after(function stopProxy() {
     proxy.close();
   });
 });

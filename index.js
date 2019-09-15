@@ -115,7 +115,7 @@ function buildProxyAuthenticateHeader(proxyOptions) {
 function isProxyAuthorizationValid(proxyOptions, proxyAuthorizationHeaderValue) {
   if (_.startsWith(proxyAuthorizationHeaderValue, AUTH_HEADER_VALUE_PREFIX)) {
     var base64Credentials = proxyAuthorizationHeaderValue.substring(AUTH_HEADER_VALUE_PREFIX.length);
-    var credentials = new Buffer(base64Credentials, 'base64').toString();
+    var credentials = Buffer.from(base64Credentials, 'base64').toString();
     var expectedCredentials = proxyOptions.auth.username + ':' + proxyOptions.auth.password;
 
     debugAuth('Received Credentials: "%s"', credentials);

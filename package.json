@@ -13,7 +13,7 @@
   },
   "main": "index.js",
   "engines": {
-    "node": ">=0.12"
+    "node": ">=6"
   },
   "keywords": [
     "proxy",
@@ -34,13 +34,13 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "lodash": "~4.15",
-    "debug": "~2.2"
+    "lodash": "4.17.15",
+    "debug": "4.1.1"
   },
   "devDependencies": {
-    "mocha": "~3.0",
-    "http-proxy-agent": "~1.0",
-    "https-proxy-agent": "~1.0"
+    "mocha": "6.2.0",
+    "http-proxy-agent": "2.1.0",
+    "https-proxy-agent": "2.2.2"
   },
   "scripts": {
     "test": "mocha"

@@ -104,8 +104,7 @@ describe('Caronte Proxy - HTTPS (using self signed certificate) - Auth', functio
     }).end();
   });
 
-  after(function stopProxy(done) {
-    proxy.on('close', done);
+  after(function stopProxy() {
     proxy.close();
   });
 });

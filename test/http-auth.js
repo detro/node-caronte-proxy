@@ -10,7 +10,7 @@ const PROXY_HOST = 'localhost';
 const PROXY_PORT = 9999;
 const PROXY_AUTH_USERNAME = 'virgilio';
 const PROXY_AUTH_PASSWORD = 'dante';
-const PROXY_AUTHORIZATION_HEADER_VALUE = 'Basic ' + new Buffer(PROXY_AUTH_USERNAME + ':' + PROXY_AUTH_PASSWORD).toString('base64');
+const PROXY_AUTHORIZATION_HEADER_VALUE = 'Basic ' + Buffer.from(PROXY_AUTH_USERNAME + ':' + PROXY_AUTH_PASSWORD).toString('base64');
 
 var httpProxyAgent = new (require('http-proxy-agent'))('http://' + PROXY_HOST + ':' + PROXY_PORT);
 
