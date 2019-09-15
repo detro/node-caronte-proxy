@@ -1,21 +1,20 @@
 language: node_js
-
 node_js:
 - '12'
 - '10'
 - '8'
 - '6'
-
 deploy:
   provider: npm
+  skip_cleanup: true
+
+  # Publishing conditions
+  on:
+    tags: true
+    repo: detro/node-caronte-proxy
+    node: '12'
 
   # Authentication
   email: detronizator@gmail.com
   api_key:
-    secure: oqS5emunUi3u4AFBgYdeZqka6KHR89OxuLd5kOPt+3ga0e/gIEe7SRoT76YZr1PZfgGpCSuWhBkBgCjeALA47cJ8Wjgo9K0OasByJ8/NOXuJS02RQcspM3/qFhYB598bI1aCzpyVLR9PLd3FMrWANDL5PTFvhuCQz07gubzCaWMBo54/h58+/8P2UmnMkdVoGZRKFusb2icg24JrKlAKYV6nyGbsPGAckfbYfYjKKGRx1nKLwnR2DWWQttZoXRuslEJPcZe4e+Ks/BwFY4G8Y7rNv8WdS6MelXvjsKNdW+B0kimolgF7iwCB5oAM88XmtRJSavpMEWkiQy1qEZrTz0at9zm+hsRqoXKNW4+eil5nNzKWB/uFLFV4TH7zZKHzX0RigRgasGatpaYMl6pysTbVYZwHFhY/FpLmAHB/vm5+/0GRGBGbpqwMi3G7gmWt0gT2i0gMz7UAbjL1rW/qjrpz22HtZglbwRkIcdkZ5WEp1mWSxjKucOGs+nc99RRMgqZhToWb20PRyKPFbA3+H6Xtph7zvaILC9oaM+JcnjYaKXrtcr5yO1h75rGBKVUSJs5vhcZBHlhK7+IRnC5D45YWrgQR0DPfBO3UQUaH9mFKDeBLeLUtn8jhoHusR1IdWCVY7CpMbX70oAxFBamYC/G7lZn9VeRrPiSRDRQasw8=
-
-  # Conditions for the deploy to happen
-  on:
-    tags: true
-    repo: detro/node-caronte-proxy
-    node: "12"
+    secure: BZiBrV/jGEQ4LInefVzta1XWWirVfYletvaMvTcLfhJzBmTsOIdI9w8B/6btXOxTvZoqkztFxc5j/v0M77G9h149HdnFiOpLuuzFDP9zGlYkQBEF9Tz56Z3KvIFh67Av3oqMf83tSEdJbiF4dYgUvIqLXkzvIb+v6Ne8S1NE4DzArxf03fZU8gbPgdW37qPRjiWqNdKbZH/PPGtw7JStAlSrvR2RaTPGOxTTJkeLVRWnK5vbVb0TShGYHj2ki/86zaiyG4B0JKLQenKt81KTFCwJdNAz/qCwT0fOEhgl7rutlx6pvekvBtuYERKZXxZmb9+pTbBX+0P+45mWn2DNUYMGizhnMADQrU1gidZWJUJGHqkctKIn6MM9u/+t+gA7i66JsjW53ZT/1xcA3FnyvoJNUejzPy4ljLGW30wn4fOUQ9g1J+p1reuMtFCgtlIz5JoRnb30XxoFyhPDts/YeWULGlYdm/4KSNpICOX/ZHMx9S86qUjc2bDnqQdE5TV+PFcvLCuds7zWqj/dhhOSInbRWbByxOqpEpATKrGuKJeyOiQRcCIIo79vlt79c8REft7mUb/NLETmSCURIXZDFnefVLl/xfA437eGmN99aEEFW+UjQY0RG43ArQGm7UHycSAz0UgUADFxhoXeJuzPcjAMOMns69ZAUzfzu+xfpco=
