@@ -13,7 +13,7 @@
   },
   "main": "index.js",
   "engines": {
-    "node": ">=6 <13"
+    "node": ">=8 <13"
   },
   "keywords": [
     "proxy",
