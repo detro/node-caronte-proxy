@@ -1,7 +1,7 @@
 {
   "name": "caronte-proxy",
   "fullname": "Caronte Proxy",
-  "version": "3.0.3",
+  "version": "3.1.0",
   "description": "An HTTP(S) Proxy, suitable to test proxying during development",
   "homepage": "https://github.com/detro/node-simple-proxy",
   "repository": {
