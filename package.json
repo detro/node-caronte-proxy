@@ -34,11 +34,11 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "lodash": "4.17.15",
+    "lodash": "4.17.20",
     "debug": "4.1.1"
   },
   "devDependencies": {
-    "mocha": "7.1.1",
+    "mocha": "7.1.2",
     "http-proxy-agent": "4.0.1",
     "https-proxy-agent": "5.0.0"
   },
