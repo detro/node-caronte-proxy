@@ -88,7 +88,7 @@ souls of the newly deceased across the rivers Styx and Acheron that divided
 the world of the living from the world of the dead.
 
 **Credit for this awesome name goes to [Antonio Pironti](https://github.com/antoniopironti),
-friend and currently colleagu**.
+friend and currently colleague**.
 
 ## Disclaimer
 This project is heavily inspired by [cloudberry](https://github.com/monai/cloudberry),
